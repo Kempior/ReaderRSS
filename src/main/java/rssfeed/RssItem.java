@@ -27,7 +27,7 @@ public class RssItem {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass() || this.hashCode() != o.hashCode()) return false;
+        if (!(o instanceof RssItem)) return false;
         RssItem rssItem = (RssItem) o;
         return Objects.equals(title, rssItem.title) &&
                 Objects.equals(link, rssItem.link) &&

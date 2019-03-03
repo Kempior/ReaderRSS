@@ -12,12 +12,12 @@ public class RssFeed {
     public String language;
     public String copyright;
 
-    public ArrayList<RssItem> items = new ArrayList<RssItem>();
+    public List<RssItem> items = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof RssFeed)) return false;
         RssFeed rssFeed = (RssFeed) o;
         return Objects.equals(title, rssFeed.title) &&
                 Objects.equals(description, rssFeed.description) &&
