@@ -1,8 +1,7 @@
 package rssfeed;
 
-import org.junit.platform.commons.util.CollectionUtils;
-
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class RssFeed {
