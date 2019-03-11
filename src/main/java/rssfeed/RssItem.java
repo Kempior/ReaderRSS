@@ -1,5 +1,7 @@
 package rssfeed;
 
+import org.bson.codecs.pojo.annotations.BsonId;
+
 import java.util.Date;
 import java.util.Objects;
 
@@ -9,7 +11,7 @@ public class RssItem {
 	public String description;
 	public String imgUrl;
 	public Date pubDate = new Date(0);
-
+	@BsonId
 	public String guid;
 
 	public RssItem() {}

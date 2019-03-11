@@ -1,17 +1,25 @@
 package dbaccess;
 
-import com.mongodb.*;
+import com.mongodb.Block;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoTimeoutException;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.*;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import rssfeed.RssFeed;
 import rssfeed.RssItem;
 
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 public class DbAccessor {
 
@@ -68,7 +76,7 @@ public class DbAccessor {
 	 * @param newItem  The item to insert into collection
 	 * @throws IllegalArgumentException when newItem is null or is already in collection
 	 */
-	public void add(String feedName, RssItem newItem) throws IllegalArgumentException {
+	public void add(String feedName, RssItem newItem) throws RuntimeException {
 
 		if (newItem == null)
 			throw new IllegalArgumentException("newItem cannot be null");
@@ -79,12 +87,27 @@ public class DbAccessor {
 		if (contains(feedName, newItem))
 			throw new IllegalArgumentException("newItem already in feed");
 
-		MongoCollection collection = db.getCollection(feedName);
-		Document newDoc = rssItem2DocumentMapper(newItem);
+		MongoCollection collection = db.getCollection(feedName, RssItem.class);
+		collection.insertOne(newItem);
+//		Document newDoc = rssItem2DocumentMapper(newItem);
+//
+//		collection.insertOne(newDoc);
 
+//		List<Document> docs = new ArrayList<Document>();
+//		docs.add(newDoc);
+//		docs.add(newDoc);
+//		newDoc.toBsonDocument();
 
-//        collection.updateOne(eq("title", feedName), );
-		// TODO FIX
+//		collection.insertOne(new Document("_id", feedName)
+//			.append("blood", docs));
+
+//		docs.add(newDoc);
+
+//		var updateQuery = new BasicDBObject("_id", "blood").put("itemList.itemID", "1");
+
+//		BasicDBObject updateCommand = new BasicDBObject("$push", new BasicDBObject("itemList.$.resources", newDoc));
+//		collection.findOneAndUpdate(updateQuery, updateCommand);
+		// TODO jesus what a fucking mess
 	}
 
 	/**
@@ -123,19 +146,8 @@ public class DbAccessor {
 		if (feed.title == null)
 			throw new InvalidParameterException("Feed title cannot be null");
 
-		MongoCollection collection = db.getCollection(feed.title);
-		collection.insertOne(new Document("title", feed.title));
-		collection.insertOne(new Document("description", feed.description));
-		collection.insertOne(new Document("link", feed.link));
-		collection.insertOne(new Document("language", feed.language));
-		collection.insertOne(new Document("copyright", feed.copyright));
-
-		for (RssItem item : feed.items) {
-			add(feed.title, item);
-		}
-
-		for (RssItem item : feed.items)
-			add(feed.title, item);
+		MongoCollection collection = db.getCollection(feed.title, RssFeed.class);
+		collection.insertOne(feed);
 	}
 
 	/**
@@ -145,22 +157,14 @@ public class DbAccessor {
 	 * @return The collection matching the parameters
 	 */
 	public RssFeed find(String collectionName) {
-		RssFeed returnFeed = new RssFeed();
+		final RssFeed[] returnFeed = new RssFeed[1];
+		MongoCollection collection = db.getCollection(collectionName, RssFeed.class);
 
-		MongoCollection collection = db.getCollection(collectionName);
+		Consumer<RssFeed> printAThing = rssFeed -> returnFeed[0] = rssFeed;
 
-		collection.find().projection(Projections.include("items"));
+		collection.find(new Document("_id", collectionName)).forEach(printAThing);
 
-		MongoCursor cursor = collection.find().iterator();
-
-		try {
-			cursor.forEachRemaining(i ->
-					returnFeed.items.add(documentToRssItemMapper((Document) i)));
-		} finally {
-			cursor.close();
-		}
-
-		return returnFeed;
+		return returnFeed[0];
 	}
 
 	/**
@@ -200,43 +204,15 @@ public class DbAccessor {
 	 * @param port     The port to use
 	 */
 	private void ConnectToDb(String hostname, int port) {
+		CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
+				fromProviders(PojoCodecProvider.builder().automatic(true).build()));
+
 		client = MongoClients.create(MongoClientSettings.builder()
 				.applyToClusterSettings((builder) ->
 						builder.hosts(Arrays.asList(new ServerAddress(hostname, port))))
+				.codecRegistry(pojoCodecRegistry)
 				.build());
 
 		db = client.getDatabase(defaultName);
-	}
-
-	private Document rssItem2DocumentMapper(RssItem newItem) {
-		return new Document("_id", newItem.guid)
-				.append("title", newItem.title)
-				.append("description", newItem.description)
-				.append("link", newItem.link)
-				.append("imgUrl", newItem.imgUrl)
-				.append("pubDate", newItem.pubDate.getTime());
-	}
-
-	private RssItem documentToRssItemMapper(Document doc) {
-		RssItem returnItem = new RssItem();
-
-		returnItem.guid = doc.get("_id").toString();
-
-		returnItem.title = toStringIfNotNull(doc.get("title"));
-		returnItem.description = toStringIfNotNull(doc.get("description"));
-		returnItem.link = toStringIfNotNull(doc.get("link"));
-		returnItem.imgUrl = toStringIfNotNull(doc.get("imgUrl"));
-
-		if (doc.get("pubDate") != null)
-			returnItem.pubDate.setTime(Long.parseLong(doc.get("pubDate").toString()));
-
-		return returnItem;
-	}
-
-	private String toStringIfNotNull(Object o) {
-		if (o == null)
-			return null;
-		else
-			return o.toString();
 	}
 }

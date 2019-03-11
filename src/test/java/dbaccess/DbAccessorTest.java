@@ -28,8 +28,8 @@ class DbAccessorTest {
 		itemDefault.guid = "itemDefault";
 
 		itemModified = new RssItem();
-		itemModified.guid = "itemModified";
-		itemModified.title = "AAA";
+		itemModified.title = "itemModified";
+		itemModified.guid = "AAA";
 		itemModified.pubDate.setTime(12345);
 
 		itemDummy = new RssItem();
@@ -81,7 +81,7 @@ class DbAccessorTest {
 
 		assertEquals(itemModified, accessor.find("testFeed").items.get(0));
 		assertEquals(1, accessor.find("testFeed").items.size());
-		assertEquals(0, accessor.find("testFeed").items.size());
+		assertNotEquals(0, accessor.find("testFeed").items.size());
 	}
 
 	@Test
@@ -94,12 +94,7 @@ class DbAccessorTest {
 		accessor.add(feed);
 
 		RssFeed dbFeed = accessor.find("testFeed");
-		for (RssItem item : dbFeed.items) {
-			assertTrue(feed.items.contains(item));
-		}
-		for (RssItem item : feed.items) {
-			assertTrue(dbFeed.items.contains(item));
-		}
+		assertTrue(feed.equals(dbFeed));
 
 		feed = new RssFeed();
 		dbFeed = accessor.find("testFeed");

@@ -1,10 +1,13 @@
 package rssfeed;
 
+import org.bson.codecs.pojo.annotations.BsonId;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class RssFeed {
+	@BsonId
 	public String title;
 	public String description;
 	public String link;
