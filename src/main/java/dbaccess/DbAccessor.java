@@ -1,11 +1,12 @@
 package dbaccess;
 
-import com.mongodb.Block;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoTimeoutException;
 import com.mongodb.ServerAddress;
-import com.mongodb.client.*;
-import com.mongodb.client.model.Projections;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -13,7 +14,6 @@ import rssfeed.RssFeed;
 import rssfeed.RssItem;
 
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
@@ -87,41 +87,31 @@ public class DbAccessor {
 		if (contains(feedName, newItem))
 			throw new IllegalArgumentException("newItem already in feed");
 
-		MongoCollection collection = db.getCollection(feedName, RssItem.class);
-		collection.insertOne(newItem);
-//		Document newDoc = rssItem2DocumentMapper(newItem);
-//
-//		collection.insertOne(newDoc);
+		MongoCollection collection = db.getCollection(feedName, RssFeed.class);
+		RssFeed feed = find(feedName);
 
-//		List<Document> docs = new ArrayList<Document>();
-//		docs.add(newDoc);
-//		docs.add(newDoc);
-//		newDoc.toBsonDocument();
+		if (feed == null) {
+			feed = new RssFeed();
+			feed.title = feedName;
+		}
 
-//		collection.insertOne(new Document("_id", feedName)
-//			.append("blood", docs));
+		feed.items.add(newItem);
 
-//		docs.add(newDoc);
-
-//		var updateQuery = new BasicDBObject("_id", "blood").put("itemList.itemID", "1");
-
-//		BasicDBObject updateCommand = new BasicDBObject("$push", new BasicDBObject("itemList.$.resources", newDoc));
-//		collection.findOneAndUpdate(updateQuery, updateCommand);
-		// TODO jesus what a fucking mess
-	}
+		collection.replaceOne(eq("_id", feed.title), feed);
+}
 
 	/**
-	 * Returns true if collection already contains the rssItem
+	 * Returns true if feed already contains the rssItem
 	 *
-	 * @param collection Collection name
-	 * @param newItem    Item to check if it's in the collection
-	 * @return True if collection already contains the rssItem, false otherwise
+	 * @param feed    Feed name
+	 * @param newItem Item to check if it's in the feed
+	 * @return True if feed already contains the rssItem, false otherwise
 	 */
-	private boolean contains(String collection, RssItem newItem) {
-		if (isEmpty(collection))
+	private boolean contains(String feed, RssItem newItem) {
+		if (isEmpty(feed))
 			return false;
 
-		return db.getCollection(collection)
+		return db.getCollection(feed)
 				.find(eq("_id", newItem.guid))
 				.first() != null;
 	}

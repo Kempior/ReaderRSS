@@ -94,22 +94,12 @@ class DbAccessorTest {
 		accessor.add(feed);
 
 		RssFeed dbFeed = accessor.find("testFeed");
-		assertTrue(feed.equals(dbFeed));
+		assertEquals(feed, dbFeed);
 
 		feed = new RssFeed();
 		dbFeed = accessor.find("testFeed");
 
-		boolean areAllItemsIdentical = true;
-		for (RssItem item : dbFeed.items)
-			if (!feed.items.contains(item))
-				areAllItemsIdentical = false;
-		assertFalse(areAllItemsIdentical);
-
-		areAllItemsIdentical = true;
-		for (RssItem item : dbFeed.items)
-			if (!feed.items.contains(item))
-				areAllItemsIdentical = false;
-		assertFalse(areAllItemsIdentical);
+		assertNotEquals(feed, dbFeed);
 	}
 
 	@Test
