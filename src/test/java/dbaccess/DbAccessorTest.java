@@ -117,4 +117,14 @@ class DbAccessorTest {
 
 		assertEquals(feed, accessor.find("Feed title"));
 	}
+
+	@Test
+	void nameCheckTest() {
+		assertDoesNotThrow(() -> accessor.nameCheck("aName"));
+
+		assertThrows(IllegalArgumentException.class, () -> accessor.nameCheck(""));
+		assertThrows(IllegalArgumentException.class, () -> accessor.nameCheck("a booty"));
+		assertThrows(IllegalArgumentException.class, () -> accessor.nameCheck("a\nbooty"));
+		assertThrows(IllegalArgumentException.class, () -> accessor.nameCheck("a\\booty"));
+	}
 }

@@ -3,10 +3,7 @@ package dbaccess;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoTimeoutException;
 import com.mongodb.ServerAddress;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -50,12 +47,11 @@ public class DbAccessor {
 	 * Switches accessor to another database under same host.
 	 *
 	 * @param newDb The name of a database to switch to
-	 * @throws IllegalArgumentException when name contains an invalid character TODO check for invalid characters
+	 * @throws IllegalArgumentException when name contains an invalid character
 	 */
 	public void switchToDb(String newDb) throws IllegalArgumentException {
 
-		if (newDb.contains(" "))
-			throw new IllegalArgumentException("Database name cannot contain spaces ' '");
+		nameCheck(newDb);
 
 		db = client.getDatabase(newDb);
 	}
@@ -72,11 +68,13 @@ public class DbAccessor {
 	/**
 	 * Adds RssItem to a given feed
 	 *
-	 * @param feedName The feed name TODO add collection name checking
+	 * @param feedName The feed name
 	 * @param newItem  The item to insert into collection
 	 * @throws IllegalArgumentException when newItem is null or is already in collection
 	 */
 	public void add(String feedName, RssItem newItem) throws RuntimeException {
+
+		nameCheck(feedName);
 
 		if (newItem == null)
 			throw new IllegalArgumentException("newItem cannot be null");
@@ -90,15 +88,44 @@ public class DbAccessor {
 		MongoCollection collection = db.getCollection(feedName, RssFeed.class);
 		RssFeed feed = find(feedName);
 
-		if (feed == null) {
+		if (!exists(feedName)) {
 			feed = new RssFeed();
 			feed.title = feedName;
 		}
 
 		feed.items.add(newItem);
 
-		collection.replaceOne(eq("_id", feed.title), feed);
-}
+		dropCollection(feedName);
+		add(feed);
+	}
+
+	/**
+	 * Adds the feed to the database as a collection with its name being rssFeed's title
+	 *
+	 * @param feed The feed to add to the database
+	 */
+	public void add(RssFeed feed) throws RuntimeException {
+
+		nameCheck(feed.title);
+
+		MongoCollection collection = db.getCollection(feed.title, RssFeed.class);
+		collection.insertOne(feed);
+	}
+
+	void nameCheck(String name) throws RuntimeException {
+
+		String[] invalidChars = "/\\. \"$*<>:|?$\n".split("");
+
+		if (name.isBlank() ||
+				Arrays.stream(invalidChars).parallel().anyMatch(name::contains))
+			throw new IllegalArgumentException("The name of an object contains an invalid character");
+
+	}
+
+	private boolean exists(String feedName) {
+		FindIterable<Document> iterable = db.getCollection("activity").find(new Document("_id", feedName));
+		return iterable.first() != null;
+	}
 
 	/**
 	 * Returns true if feed already contains the rssItem
@@ -127,20 +154,6 @@ public class DbAccessor {
 	}
 
 	/**
-	 * Adds the feed to the database as a collection with its name being rssFeed's title
-	 *
-	 * @param feed The feed to add to the database
-	 */
-	public void add(RssFeed feed) {
-
-		if (feed.title == null)
-			throw new InvalidParameterException("Feed title cannot be null");
-
-		MongoCollection collection = db.getCollection(feed.title, RssFeed.class);
-		collection.insertOne(feed);
-	}
-
-	/**
 	 * Returns the collection with a given name as a RssFeed
 	 *
 	 * @param collectionName The name of collection to retrieve
@@ -157,18 +170,10 @@ public class DbAccessor {
 		return returnFeed[0];
 	}
 
-	/**
-	 * Drops the current database
-	 */
 	public void dropDb() {
 		db.drop();
 	}
 
-	/**
-	 * Drops the collection
-	 *
-	 * @param name The name of the collection
-	 */
 	public void dropCollection(String name) {
 		db.getCollection(name).drop();
 	}
