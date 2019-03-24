@@ -1,4 +1,6 @@
 import org.junit.jupiter.api.Test;
+import webcontent.HtmlParser;
+import webcontent.WebContent;
 
 import java.util.ArrayList;
 
