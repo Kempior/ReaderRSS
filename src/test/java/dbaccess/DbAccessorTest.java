@@ -105,17 +105,17 @@ class DbAccessorTest {
 	@Test
 	void feedAccessTest() {
 		RssFeed feed = new RssFeed();
-		feed.title = "Feed title";
+		feed.title = "feedTitle";
 		feed.items.add(itemNull);
 		feed.items.add(itemDefault);
 		feed.items.add(itemModified);
 		feed.items.add(itemDummy);
 
-		assertNotEquals(feed, accessor.find("Feed title"));
+		assertNotEquals(feed, accessor.find("feedTitle"));
 
 		accessor.add(feed);
 
-		assertEquals(feed, accessor.find("Feed title"));
+		assertEquals(feed, accessor.find("feedTitle"));
 	}
 
 	@Test
