@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import rssfeed.RssFeed;
 import rssfeed.RssItem;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class DbAccessorTest {
@@ -89,6 +91,7 @@ class DbAccessorTest {
 
 		RssFeed feed = new RssFeed();
 		feed.title = "testFeed";
+		feed.description = "a description";
 		feed.items.add(itemDefault);
 		feed.items.add(itemModified);
 		accessor.add(feed);
@@ -116,6 +119,12 @@ class DbAccessorTest {
 		accessor.add(feed);
 
 		assertEquals(feed, accessor.find("feedTitle"));
+
+		RssFeed anotherOne = new RssFeed();
+		anotherOne.title = "anotherOne";
+		accessor.add(anotherOne);
+
+		assertEquals(accessor.findAll(), Set.of(feed, anotherOne));
 	}
 
 	@Test

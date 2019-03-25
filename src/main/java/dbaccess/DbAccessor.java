@@ -10,8 +10,9 @@ import org.bson.codecs.pojo.PojoCodecProvider;
 import rssfeed.RssFeed;
 import rssfeed.RssItem;
 
-import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -209,5 +210,19 @@ public class DbAccessor {
 				.build());
 
 		db = client.getDatabase(defaultName);
+	}
+
+	public Set<RssFeed> findAll() {
+		var names =  db.listCollectionNames();
+
+		Set<RssFeed> returnVal = new HashSet<>();
+
+		for (String name : names) {
+			returnVal.add(
+					find(name)
+			);
+		}
+
+		return  returnVal;
 	}
 }
